@@ -36,6 +36,8 @@
     <string name="menu_delete">Löschen</string>
     <string name="menu_enable_full_text_retrieval">Ganzen Text abrufen</string>
     <string name="menu_disable_full_text_retrieval">Nur Teaser abrufen</string>
+    <string name="menu_pause_retrieval">Pause</string>
+    <string name="menu_resume_retrieval">Fortsetzen</string>
     <string name="menu_all_read">Alle als gelesen markieren</string>
     <string name="flym_feeds">Flym-Feeds</string>
     <string name="error">Fehler</string>

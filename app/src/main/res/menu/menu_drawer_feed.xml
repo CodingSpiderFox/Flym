@@ -25,4 +25,12 @@
 		android:id="@+id/disable_full_text_retrieval"
 		android:title="@string/menu_disable_full_text_retrieval"/>
 
+	<item
+		android:id="@+id/pause_retrieval"
+		android:title="@string/menu_pause_retrieval"/>
+
+	<item
+		android:id="@+id/resume_retrieval"
+		android:title="@string/menu_resume_retrieval"/>
+
 </menu>

@@ -398,102 +398,104 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
 			val imgUrlsToDownload = mutableMapOf<String, List<String>>()
 			val downloadPictures = shouldDownloadPictures()
 
-			val previousFeedState = feed.copy()
-			try {
-				createCall(feed.link).execute().use { response ->
-					val input = SyndFeedInput()
-					val romeFeed = input.build(XmlReader(response.body()!!.byteStream()))
-					romeFeed.entries.filter { it.publishedDate?.time ?: Long.MAX_VALUE > acceptMinDate }
-							.map { it.toDbFormat(feed) }
-							.forEach {
-						filterItem(it, entries)
-					}
+			if(!feed.isPaused) {
 
-					feed.update(romeFeed)
-				}
-			}
-		 	catch (t: Throwable) {
-				feed.fetchError = true
-			}
-
-			if (feed != previousFeedState) {
-				App.db.feedDao().update(feed)
-			}
-
-			// First we remove the entries that we already have in db (no update to save data)
-			val existingIds = App.db.entryDao().idsForFeed(feed.id)
-			entries.removeAll { it.id in existingIds }
-
-			// Second, we filter items with same title than one we already have
-			if (context.getPrefBoolean(PrefConstants.REMOVE_DUPLICATES, true)) {
-				val existingTitles = App.db.entryDao().findAlreadyExistingTitles(entries.mapNotNull { it.title })
-				entries.removeAll { it.title in existingTitles }
-			}
-
-			// Third, we filter items containing forbidden keywords
-			val filterKeywordString = context.getPrefString(PrefConstants.FILTER_KEYWORDS, "")!!
-			if (filterKeywordString.isNotBlank()) {
-				val keywordLists = filterKeywordString.split(',').map { it.trim() }
-
-				if (keywordLists.isNotEmpty()) {
-					entries.removeAll { entry ->
-						keywordLists.any {
-							entry.title?.contains(it, true) == true ||
-									entry.description?.contains(it, true) == true
-						}
-					}
-				}
-			}
-
-			val feedBaseUrl = getBaseUrl(feed.link)
-			var foundExisting = false
-
-			// Now we improve the html and find images
-			for (entry in entries) {
-				if (existingIds.contains(entry.id)) {
-					foundExisting = true
-				}
-
-				if (entry.publicationDate != entry.fetchDate || !foundExisting) { // we try to not put back old entries, even when there is no date
-					if (!existingIds.contains(entry.id)) {
-						filterItem(entry, entriesToInsert)
-
-						entry.title = entry.title?.replace("\n", " ")?.trim()
-						entry.description?.let { desc ->
-							// Improve the description
-							val improvedContent = HtmlUtils.improveHtmlContent(desc, feedBaseUrl)
-
-							if (downloadPictures) {
-								val imagesList = HtmlUtils.getImageURLs(improvedContent)
-								if (imagesList.isNotEmpty()) {
-									if (entry.imageLink == null) {
-										entry.imageLink = HtmlUtils.getMainImageURL(imagesList)
-									}
-									imgUrlsToDownload[entry.id] = imagesList
+				val previousFeedState = feed.copy()
+				try {
+					createCall(feed.link).execute().use { response ->
+						val input = SyndFeedInput()
+						val romeFeed = input.build(XmlReader(response.body()!!.byteStream()))
+						romeFeed.entries.filter { it.publishedDate?.time ?: Long.MAX_VALUE > acceptMinDate }
+								.map { it.toDbFormat(feed) }
+								.forEach {
+									filterItem(it, entries)
 								}
-							} else if (entry.imageLink == null) {
-								entry.imageLink = HtmlUtils.getMainImageURL(improvedContent)
-							}
 
-							entry.description = improvedContent
+						feed.update(romeFeed)
+					}
+				} catch (t: Throwable) {
+					feed.fetchError = true
+				}
+
+				if (feed != previousFeedState) {
+					App.db.feedDao().update(feed)
+				}
+
+				// First we remove the entries that we already have in db (no update to save data)
+				val existingIds = App.db.entryDao().idsForFeed(feed.id)
+				entries.removeAll { it.id in existingIds }
+
+				// Second, we filter items with same title than one we already have
+				if (context.getPrefBoolean(PrefConstants.REMOVE_DUPLICATES, true)) {
+					val existingTitles = App.db.entryDao().findAlreadyExistingTitles(entries.mapNotNull { it.title })
+					entries.removeAll { it.title in existingTitles }
+				}
+
+				// Third, we filter items containing forbidden keywords
+				val filterKeywordString = context.getPrefString(PrefConstants.FILTER_KEYWORDS, "")!!
+				if (filterKeywordString.isNotBlank()) {
+					val keywordLists = filterKeywordString.split(',').map { it.trim() }
+
+					if (keywordLists.isNotEmpty()) {
+						entries.removeAll { entry ->
+							keywordLists.any {
+								entry.title?.contains(it, true) == true ||
+										entry.description?.contains(it, true) == true
+							}
 						}
-					} else {
+					}
+				}
+
+				val feedBaseUrl = getBaseUrl(feed.link)
+				var foundExisting = false
+
+				// Now we improve the html and find images
+				for (entry in entries) {
+					if (existingIds.contains(entry.id)) {
 						foundExisting = true
 					}
+
+					if (entry.publicationDate != entry.fetchDate || !foundExisting) { // we try to not put back old entries, even when there is no date
+						if (!existingIds.contains(entry.id)) {
+							filterItem(entry, entriesToInsert)
+
+							entry.title = entry.title?.replace("\n", " ")?.trim()
+							entry.description?.let { desc ->
+								// Improve the description
+								val improvedContent = HtmlUtils.improveHtmlContent(desc, feedBaseUrl)
+
+								if (downloadPictures) {
+									val imagesList = HtmlUtils.getImageURLs(improvedContent)
+									if (imagesList.isNotEmpty()) {
+										if (entry.imageLink == null) {
+											entry.imageLink = HtmlUtils.getMainImageURL(imagesList)
+										}
+										imgUrlsToDownload[entry.id] = imagesList
+									}
+								} else if (entry.imageLink == null) {
+									entry.imageLink = HtmlUtils.getMainImageURL(improvedContent)
+								}
+
+								entry.description = improvedContent
+							}
+						} else {
+							foundExisting = true
+						}
+					}
 				}
+
+				// Insert everything
+				App.db.entryDao().insert(*(entriesToInsert.toTypedArray()))
+
+				if (feed.retrieveFullText) {
+					addEntriesToMobilize(entries.map { it.id })
+				}
+
+				addImagesToDownload(imgUrlsToDownload)
 			}
-
-			// Insert everything
-			App.db.entryDao().insert(*(entriesToInsert.toTypedArray()))
-
-			if (feed.retrieveFullText) {
-				addEntriesToMobilize(entries.map { it.id })
-			}
-
-			addImagesToDownload(imgUrlsToDownload)
 
 			return entries.size
-			}
+		}
 
 		private fun filterItem(it: Entry, entries: MutableList<Entry>) {
 			if (context.getPrefBoolean(PrefConstants.REMOVE_DUPLICATES, true)) {

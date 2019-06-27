@@ -13,6 +13,8 @@
     <string name="menu_delete">Delete</string>
     <string name="menu_enable_full_text_retrieval">Enable full text retrieval</string>
     <string name="menu_disable_full_text_retrieval">Disable full text retrieval</string>
+    <string name="menu_pause_retrieval">Pause</string>
+    <string name="menu_resume_retrieval">Unpause</string>
     <string name="menu_all_read">Mark all as read</string>
     <string name="flym_feeds">Flym feeds</string>
     <string name="error">Error</string>

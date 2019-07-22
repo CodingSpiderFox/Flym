@@ -24,6 +24,7 @@ object PrefConstants {
 
     const val IS_REFRESHING = "is_refreshing"
 
+    const val REALLY_MARK_ALL_AS_READ = "enable_markall_asread"
     const val REFRESH_ENABLED = "refresh_enabled"
     const val REFRESH_NOTIFICATION_ENABLED = "enable_refresh_notification"
     const val REFRESH_INTERVAL = "refresh_interval"

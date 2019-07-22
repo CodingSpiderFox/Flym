@@ -78,6 +78,8 @@
     <string name="settings_keep_time_unread">Time that the unread entries will be kept</string>
     <string name="settings_display_images">Display images</string>
     <string name="settings_display_images_description">Display images in entries</string>
+    <string name="settings_enable_markall_asread">Mark all as read enabled</string>
+    <string name="settings_enable_markall_asread_description">Prevent accidentally marking all as read by disabling this option</string>
     <string name="settings_preload_image_mode">Preload images</string>
     <string name="settings_font_size">Text size</string>
     <string name="settings_refresh_wifi_only">Refresh only over Wi-Fi</string>

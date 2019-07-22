@@ -174,33 +174,36 @@ class EntriesFragment : Fragment() {
 		}
 
 		read_all_fab.onClick { _ ->
-			entryIds?.let { entryIds ->
-				if (entryIds.isNotEmpty()) {
-					doAsync {
-						// TODO check if limit still needed
-						entryIds.withIndex().groupBy { it.index / 300 }.map { pair -> pair.value.map { it.value } }.forEach {
-							App.db.entryDao().markAsRead(it)
-						}
-					}
+			if (context?.getPrefBoolean(PrefConstants.IS_REFRESHING, false) == false) {
 
-					coordinator.longSnackbar(R.string.marked_as_read, R.string.undo) { _ ->
+				entryIds?.let { entryIds ->
+					if (entryIds.isNotEmpty()) {
 						doAsync {
 							// TODO check if limit still needed
 							entryIds.withIndex().groupBy { it.index / 300 }.map { pair -> pair.value.map { it.value } }.forEach {
-								App.db.entryDao().markAsUnread(it)
+								App.db.entryDao().markAsRead(it)
 							}
+						}
 
-							uiThread {
-								// we need to wait for the list to be empty before displaying the new items (to avoid scrolling issues)
-								listDisplayDate = Date().time
-								initDataObservers()
+						coordinator.longSnackbar(R.string.marked_as_read, R.string.undo) { _ ->
+							doAsync {
+								// TODO check if limit still needed
+								entryIds.withIndex().groupBy { it.index / 300 }.map { pair -> pair.value.map { it.value } }.forEach {
+									App.db.entryDao().markAsUnread(it)
+								}
+
+								uiThread {
+									// we need to wait for the list to be empty before displaying the new items (to avoid scrolling issues)
+									listDisplayDate = Date().time
+									initDataObservers()
+								}
 							}
 						}
 					}
-				}
 
-				if (feed == null || feed?.id == Feed.ALL_ENTRIES_ID) {
-					activity?.notificationManager?.cancel(0)
+					if (feed == null || feed?.id == Feed.ALL_ENTRIES_ID) {
+						activity?.notificationManager?.cancel(0)
+					}
 				}
 			}
 		}

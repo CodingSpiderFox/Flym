@@ -20,6 +20,7 @@ package net.frju.flym.data.entities
 import androidx.room.*
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
+import net.frju.flym.data.utils.LocalDateTimeConverter
 import java.time.LocalDateTime
 
 @Parcelize
@@ -29,4 +30,5 @@ import java.time.LocalDateTime
 data class Filter(
 		var filterId: String = "",
 		var keywordToIgnore: String = "",
+		@TypeConverters(LocalDateTimeConverter::class)
 		var dateCreated: LocalDateTime = LocalDateTime.now()) : Parcelable

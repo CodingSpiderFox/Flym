@@ -33,11 +33,12 @@ import net.frju.flym.data.entities.Entry
 import net.frju.flym.data.entities.Feed
 import net.frju.flym.data.entities.Filter
 import net.frju.flym.data.entities.Task
+import net.frju.flym.data.utils.LocalDateTimeConverter
 import org.jetbrains.anko.doAsync
 
 
 @Database(entities = [Feed::class, Entry::class, Task::class, Filter::class], version = 3)
-@TypeConverters(Converters::class)
+@TypeConverters(Converters::class, LocalDateTimeConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 
     companion object {

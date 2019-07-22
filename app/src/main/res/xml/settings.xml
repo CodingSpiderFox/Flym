@@ -141,6 +141,16 @@
             android:key="filter_keywords"
             android:title="@string/filter" />
 
+        <EditTextPreference
+            android:key="filter_keywords_shared"
+            android:title="@string/filter_shared" />
+
+        <EditTextPreference
+            android:key="min_filter_word_length"
+            android:title="Minimum word length"
+            android:summary="Minimum length of filter keywords to be accepted"
+            android:maxLength="2" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

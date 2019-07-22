@@ -27,7 +27,6 @@ import net.frju.flym.data.tasks.InsertFiltersTask
 import net.frju.flym.data.utils.PrefConstants
 import net.frju.flym.utils.getPrefString
 import net.frju.flym.utils.putPrefString
-import java.util.*
 import kotlin.collections.ArrayList
 
 class SettingsActivity : AppCompatActivity() {
@@ -64,26 +63,57 @@ class SettingsActivity : AppCompatActivity() {
 	fun updateFilters() {
 		var deleteAllTask = DeleteAllFiltersTask()
 		deleteAllTask.execute()
+		var finalFilters = ArrayList<String>()
+		var finalFiltersShared = ArrayList<String>()
 
-		var filterString = applicationContext.getPrefString(PrefConstants.FILTER_KEYWORDS, "")
+		var filterString = applicationContext.getPrefString(PrefConstants.FILTER_KEYWORDS, "")!!
+		var finalFilterPrefString = addFiltersAndReturnFinalPrefString(filterString, finalFilters)
+		applicationContext.putPrefString(PrefConstants.FILTER_KEYWORDS, finalFilterPrefString)
 
-		if(filterString != null && !filterString.isNullOrEmpty() && !filterString.isBlank()) {
-			var filterStrings = filterString.split("\n")
-			var finalFilters = ArrayList<String>()
+		filterString = applicationContext.getPrefString(PrefConstants.FILTER_KEYWORDS_SHARED, "")!!
+		finalFilterPrefString = addFiltersAndReturnFinalPrefString(filterString, finalFiltersShared)
+		applicationContext.putPrefString(PrefConstants.FILTER_KEYWORDS_SHARED, finalFilterPrefString)
+	}
 
-			if(filterStrings != null) {
+	fun getFinalFiltersItemContainingFilterWithSubstring(finalFilters : List<String> , substring : String): String? {
+
+		finalFilters.forEach() {
+			if(it.contains(substring)) {
+				return it
+			}
+		}
+		return null
+	}
+
+	fun addFiltersAndReturnFinalPrefString(filterPrefString : String, finalFilters: ArrayList<String>) : String {
+		if (filterPrefString != null && !filterPrefString.isNullOrEmpty() && !filterPrefString.isBlank()) {
+			var filterStrings = filterPrefString.split("\n").sorted()
+			var minimumWordLength = applicationContext.getPrefString(PrefConstants.MIN_FILTER_WORD_LENGTH, "1")
+			var minimumWordLengthInt = Integer.valueOf(minimumWordLength.toString())
+
+			if (filterStrings != null) {
 				for (currentFilterString in filterStrings) {
-					var finalFilterString = currentFilterString.trim()
-					if(finalFilterString != null
-							&& !finalFilterString.isBlank()
-							&& !finalFilterString.isEmpty()) {
-						finalFilters.add(finalFilterString)
+					var finalFilterNewItemString = currentFilterString.trim()
+					if (finalFilterNewItemString != null
+							&& !finalFilterNewItemString.isBlank()
+							&& !finalFilterNewItemString.isEmpty()
+							&& finalFilterNewItemString.length >= minimumWordLengthInt) {
+						var finalFiltersItemContainingNewFilterItemAsSubstring =
+								getFinalFiltersItemContainingFilterWithSubstring(finalFilters, finalFilterNewItemString)
+						if (finalFiltersItemContainingNewFilterItemAsSubstring != null) {
+							finalFilters.remove(finalFiltersItemContainingNewFilterItemAsSubstring)
+						} else {
+							finalFilters.add(finalFilterNewItemString)
+						}
 					}
 				}
 			}
 
 			var insertAllTask = InsertFiltersTask()
 			insertAllTask.execute(finalFilters)
+
+			return finalFilters.joinToString("\n", "", "", -1, "")
 		}
+		return ""
 	}
 }
